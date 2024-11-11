@@ -10,7 +10,7 @@
 - **Kandrathi Sai Aishwarya** - B22CS028
 
 ## Acknowledgments
-We extend our gratitude to **Dr. Suchetana Chakraborthy** for guidance and support throughout this project.
+We extend our gratitude to **Dr. Suchetana Chakraborty** for guidance and support throughout this project.
 
 ---
 
