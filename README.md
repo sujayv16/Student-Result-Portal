@@ -4,6 +4,7 @@ The **Student Result Portal** is a secure, web-based application built using **P
 
 ---
 
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Members](#project-members)
@@ -20,6 +21,15 @@ The **Student Result Portal** is a secure, web-based application built using **P
 6. [Database Functionalities](#database-functionalities)
 7. [Installation Instructions](#installation-instructions)
 8. [Contributing](#contributing)
+=======
+## Team Members
+- **Viswanadhapalli Sujay** - B22CS063
+- **Sonajoke Nikshiptha** - B22CS050
+- **Kandrathi Sai Aishwarya** - B22CS028
+
+## Acknowledgments
+We extend our gratitude to **Dr. Suchetana Chakraborty** for guidance and support throughout this project.
+
 
 ---
 
