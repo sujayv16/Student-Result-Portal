@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <link rel="stylesheet" href="./css/homepage.css">
+    <link rel="stylesheet" href="./css/font-awesome-4.7.0/css/font-awesome.css">
+    <title>Student Result Portal</title>
+</head>
+<body>
+    
+    <div class="container">
+        <div class="title">
+            <span class="heading">Student Result Portal - IIT Jodhpur</span>
+        </div>
+        
+        <div class="nav">
+            <ul>
+                <li>
+                    <a href="index.html">Home</a>
+                </li>
+                <li>
+                    <a href="login.php">Admin Login</a>
+                </li>
+                <li class="dropdown" onclick="toggleDisplay('1')">
+                    <a href="#" class="dropbtn">Faculties &nbsp
+                        <span class="fa fa-angle-down"></span>
+                    </a>
+                    <div class="dropdown-content" id="1">
+                        <a href="">Engineering</a>
+                        <a href="">Science</a>
+                        <a href="">Management</a>
+                        <a href="">Design</a>
+                        <a href="">Humanities</a>
+                        <a href="">Others</a>
+                    </div>
+                </li>
+                <li class="dropdown" onclick="toggleDisplay('2')">
+                    <a href="#" class="dropbtn">Student &nbsp
+                        <span class="fa fa-angle-down"></span>
+                    </a>
+                    <div class="dropdown-content" id="2">
+                        <a href="">Admissions</a>
+                        <a href="">Scholarship</a>
+                        <a href="">Examination</a>
+                        <a href="./login.php">Results</a>
+                        <a href="">Manage Results</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    
+        <div class="slider">
+            <img src="images/iitjodhpur.jpg" class="slider-image" alt="IIT Jodhpur Campus">
+        </div>
+    
+        <div class="main">
+            <span>About IIT Jodhpur</span>
+            <p>Indian Institute of Technology Jodhpur (IITJ), established in 2008, is one of the premier engineering and research institutions in India. Known for its innovative approach to research, IIT Jodhpur emphasizes interdisciplinary studies and state-of-the-art technologies. Situated in the vibrant city of Jodhpur, Rajasthan, IITJ has quickly gained recognition for its modern curriculum, collaborative research efforts, and cutting-edge facilities.</p>
+    
+            <div class="info">
+                <div>
+                    <span>Courses</span> <hr>
+                    <p>Explore a wide range of undergraduate, postgraduate, and doctoral programs at IIT Jodhpur, each designed to foster critical thinking and problem-solving skills for a successful career in various fields.</p>
+                </div>
+                <div>
+                    <span>Admissions</span> <hr>
+                    <p>Discover admission processes, eligibility criteria, and financial aid opportunities that can support your journey at IIT Jodhpur.</p>
+                </div>
+                <div>
+                    <span>Library</span> <hr>
+                    <p>Stay informed with access to IIT Jodhpur’s extensive library resources, from scientific journals to the latest research publications and databases.</p>
+                </div>
+                <div>
+                    <span>Campus Life</span> <hr>
+                    <p>Experience the vibrant campus life at IIT Jodhpur, from cultural fests to tech meetups, offering a perfect blend of academics and extracurricular activities.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer--contact">
+                <span>Contact Us</span>
+                <p>contact@iitj.ac.in</p>
+                <p>+91-291-280-1132</p>
+            </div>
+            <div class="footer--info">
+                <span>Important Links</span>
+                <a href="homepage.html">Home</a>
+                <a href="login.php">Admin Login</a>
+                <a href="login.php">Results</a>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

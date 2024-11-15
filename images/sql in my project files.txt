@@ -1,0 +1,764 @@
+add_classes.php
+
+ include('init.php');
+    include('session.php');
+
+    if (isset($_POST['class_name'], $_POST['class_id'])) {
+        $name = $_POST["class_name"];
+        $id = $_POST["class_id"];
+
+        // Validation
+        if (empty($name) || empty($id) || preg_match("/[a-z]/i", $id)) {
+            if (empty($name)) echo '<p class="error">Please enter class</p>';
+            if (empty($id)) echo '<p class="error">Please enter class id</p>';
+            if (preg_match("/[a-z]/i", $id)) echo '<p class="error">Please enter valid class id</p>';
+            exit();
+        }
+
+        // Check if the index exists before creating it
+        $check_index_query = "SHOW INDEXES FROM class WHERE Key_name = 'idx_class_id'";
+        $result = mysqli_query($conn, $check_index_query);
+        
+        if (mysqli_num_rows($result) == 0) {
+            // Create the index if it doesn't exist
+            $create_index_query = "CREATE INDEX idx_class_id ON class(id)";
+            mysqli_query($conn, $create_index_query); // Execute index creation
+        }
+
+        // Start transaction with SERIALIZABLE isolation for concurrency control
+        mysqli_begin_transaction($conn, MYSQLI_TRANS_START_READ_WRITE);
+        try {
+            $stmt = $conn->prepare("INSERT INTO class (name, id) VALUES (?, ?)");
+            $stmt->bind_param("si", $name, $id);
+            $stmt->execute();
+
+            // Commit the transaction
+            mysqli_commit($conn);
+            echo '<script>alert("Class added successfully");</script>';
+        } catch (Exception $e) {
+            mysqli_rollback($conn);
+            echo '<script>alert("Error adding class");</script>';
+        }
+    }
+
+
+
+student.php
+
+        include("init.php");
+
+        // Start read-only transaction
+        mysqli_begin_transaction($conn, MYSQLI_TRANS_START_READ_ONLY); // Use a read-only transaction
+
+        if(!isset($_GET['class']))
+            $class = null;
+        else
+            $class = $_GET['class'];
+        
+        $rn = $_GET['rn'];
+
+        // Validation: Ensure class and roll number are provided and valid
+        if (empty($class) or empty($rn) or preg_match("/[a-z]/i", $rn)) {
+            if(empty($class))
+                echo '<p class="error">Please select your class</p>';
+            if(empty($rn))
+                echo '<p class="error">Please enter your roll number</p>';
+            if(preg_match("/[a-z]/i", $rn))
+                echo '<p class="error">Please enter a valid roll number</p>';
+            exit();
+        }
+
+        // Query to fetch student's name using roll number and class
+        $name_sql = mysqli_query($conn, "SELECT `name` FROM `students` WHERE `rno`='$rn' AND `class_name`='$class'");
+        $name = '';
+        while($row = mysqli_fetch_assoc($name_sql)) {
+            $name = $row['name'];
+        }
+
+        // Query to fetch results for the student
+        $result_sql = mysqli_query($conn, "SELECT `p1`, `p2`, `p3`, `p4`, `p5`, `marks`, `percentage` FROM `result` WHERE `rno`='$rn' AND `class`='$class'");
+
+        // If no result found
+        if (mysqli_num_rows($result_sql) == 0) {
+            echo "No result found for this roll number in this class.";
+            exit();
+        }
+
+        // Fetching the result data
+        while ($row = mysqli_fetch_assoc($result_sql)) {
+            $p1 = $row['p1'];
+            $p2 = $row['p2'];
+            $p3 = $row['p3'];
+            $p4 = $row['p4'];
+            $p5 = $row['p5'];
+            $marks = $row['marks'];  // Corrected variable to $marks
+            $percentage = $row['percentage'];
+        }
+
+        // Query to calculate rank in the class
+        $rank_sql = mysqli_query($conn, "SELECT `rno`, `marks` FROM `result` WHERE `class`='$class' ORDER BY `marks` DESC");
+
+        $rank = 1;
+        while ($row = mysqli_fetch_assoc($rank_sql)) {
+            if ($row['rno'] == $rn) {
+                break; // When we find the student's roll number, we break out of the loop
+            }
+            $rank++; // Increment rank for each student
+        }
+
+        // Commit read-only transaction
+        mysqli_commit($conn); // Committing the transaction
+
+        // Close the database connection
+        mysqli_close($conn);
+
+
+
+add_results.php
+
+include('init.php');
+    include('session.php');
+
+    if (isset($_POST['rno'], $_POST['p1'], $_POST['p2'], $_POST['p3'], $_POST['p4'], $_POST['p5'])) {
+        $rno = $_POST['rno'];
+        $class_name = $_POST['class_name'] ?? null;
+        $p1 = (int)$_POST['p1'];
+        $p2 = (int)$_POST['p2'];
+        $p3 = (int)$_POST['p3'];
+        $p4 = (int)$_POST['p4'];
+        $p5 = (int)$_POST['p5'];
+
+        $marks = $p1 + $p2 + $p3 + $p4 + $p5;
+        $percentage = $marks / 5;
+
+        // Validation
+        if (empty($class_name) || empty($rno) || $p1 > 100 || $p2 > 100 || $p3 > 100 || $p4 > 100 || $p5 > 100 || $p1 < 0 || $p2 < 0 || $p3 < 0 || $p4 < 0 || $p5 < 0) {
+            echo '<p class="error">Invalid inputs detected.</p>';
+            exit();
+        }
+
+        // Create index on result table if not exists (rno, class)
+        $check_index_query = "SHOW INDEXES FROM result WHERE Key_name = 'idx_result_rno_class'";
+        $result = mysqli_query($conn, $check_index_query);
+        
+        if (mysqli_num_rows($result) == 0) {
+            // Create the index if it doesn't exist
+            $create_index_query = "CREATE INDEX idx_result_rno_class ON result(rno, class)";
+            mysqli_query($conn, $create_index_query); // Execute index creation
+        }
+
+        // Start transaction
+        mysqli_begin_transaction($conn, MYSQLI_TRANS_START_READ_WRITE);
+        try {
+            // Fetch student name
+            $stmt_name = $conn->prepare("SELECT name FROM students WHERE rno = ? AND class_name = ?");
+            $stmt_name->bind_param("is", $rno, $class_name);
+            $stmt_name->execute();
+            $stmt_name->store_result();
+            $stmt_name->bind_result($display);
+            $stmt_name->fetch();
+
+            if (empty($display)) {
+                throw new Exception("Student not found.");
+            }
+
+            // Savepoint for partial rollback
+            mysqli_query($conn, "SAVEPOINT add_result");
+
+            // Insert the result
+            $stmt_result = $conn->prepare("INSERT INTO result (name, rno, class, p1, p2, p3, p4, p5, marks, percentage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt_result->bind_param("sisiiiiiii", $display, $rno, $class_name, $p1, $p2, $p3, $p4, $p5, $marks, $percentage);
+            $stmt_result->execute();
+
+            // Commit transaction
+            mysqli_commit($conn);
+            echo '<script>alert("Result added successfully");</script>';
+        } catch (Exception $e) {
+            mysqli_rollback($conn);
+            echo '<script>alert("Error adding result: ' . $e->getMessage() . '");</script>';
+        }
+    }
+
+
+add_student.php
+
+ include('init.php');
+    include('session.php');
+
+    if (isset($_POST['student_name'], $_POST['roll_no'], $_POST['class_name'])) {
+        $name = $_POST['student_name'];
+        $rno = $_POST['roll_no'];
+        $class_name = $_POST['class_name'];
+
+        // Validation
+        if (empty($name) || empty($rno) || empty($class_name) || preg_match("/[a-z]/i", $rno) || !preg_match("/^[a-zA-Z ]*$/", $name)) {
+            echo '<p class="error">Invalid input detected.</p>';
+            exit();
+        }
+
+        // Mask roll number for privacy
+        $masked_rno = substr($rno, 0, -2) . '**';
+
+        mysqli_begin_transaction($conn, MYSQLI_TRANS_START_READ_WRITE);
+        try {
+            $stmt = $conn->prepare("INSERT INTO students (name, rno, class_name) VALUES (?, ?, ?)");
+            $stmt->bind_param("sis", $name, $masked_rno, $class_name);
+            $stmt->execute();
+
+            mysqli_commit($conn);
+            echo '<script>alert("Student added successfully");</script>';
+        } catch (Exception $e) {
+            mysqli_rollback($conn);
+            echo '<script>alert("Error adding student");</script>';
+        }
+    }
+
+
+
+
+dashboard.php
+
+<?php
+            echo '<p>Number of classes: '.$no_of_classes[0].'</p>';
+            echo '<p>Number of students: '.$no_of_students[0].'</p>';
+            echo '<p>Number of results: '.$no_of_result[0].'</p>';
+        ?>
+    </div>
+
+    <div class="footer">
+        <!-- <span>Designed & Coded By Jibin Thomas</span> -->
+    </div>
+</body>
+</html>
+
+<?php
+   include('session.php');
+?>
+
+
+
+
+hash.php
+
+$password = 'admin123';  // The plain password you want to hash
+$hashed_password = password_hash($password, PASSWORD_DEFAULT);  // Hash the password
+echo $hashed_password;  // Output the hashed password
+
+
+
+init.php
+
+// Prevent multiple inclusions of init.php
+    if (!defined('INIT_PHP_LOADED')) {
+        define('INIT_PHP_LOADED', true);
+
+        // Database connection configuration
+        $servername = "localhost";
+        $username = "root";
+        $password = "Sekhar@1629";
+        $database = "srms";
+
+        // Establish a MySQL connection with error handling
+        $conn = mysqli_connect($servername, $username, $password, $database);
+
+        // Check connection
+        if (!$conn) {
+            die("Connection failed: " . mysqli_connect_error());
+        }
+
+        // Enable ACID properties with strict transaction isolation level
+        mysqli_autocommit($conn, false);  // Turn off auto-commit to control transactions
+        mysqli_query($conn, "SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;");
+
+        /**
+         * Function to execute queries with retry mechanism.
+         * It retries the query if a deadlock occurs, with a limited number of retries.
+         * @param mysqli $conn The database connection.
+         * @param string $query The SQL query to execute.
+         * @param int $retries Number of retries for deadlock resolution.
+         * @return mixed The query result or false if retries are exhausted.
+         */
+        if (!function_exists('executeWithRetry')) {
+            function executeWithRetry($conn, $query, $retries = 3) {
+                $attempt = 0;
+                while ($attempt < $retries) {
+                    try {
+                        // Begin transaction
+                        mysqli_begin_transaction($conn);
+
+                        // Execute the query
+                        $result = mysqli_query($conn, $query);
+
+                        // Commit if successful
+                        if ($result) {
+                            mysqli_commit($conn);
+                            return $result;
+                        } else {
+                            throw new Exception("Query failed: " . mysqli_error($conn));
+                        }
+                    } catch (Exception $e) {
+                        // Rollback on error
+                        mysqli_rollback($conn);
+
+                        // Check if error is deadlock, retry if necessary
+                        if (mysqli_errno($conn) == 1213) {  // Error 1213: Deadlock found
+                            $attempt++;
+                            sleep(1);  // Optional: Small delay before retrying
+                        } else {
+                            // Log error and stop retries
+                            error_log("Database error: " . $e->getMessage());
+                            break;
+                        }
+                    }
+                }
+                return false;  // Return false if retries are exhausted or error is not recoverable
+            }
+        }
+
+        /**
+         * Execute a transactional query with savepoints.
+         * This function uses savepoints within a transaction to handle partial rollbacks.
+         * @param mysqli $conn The database connection.
+         * @param string $queries Array of SQL queries to execute with savepoints.
+         * @return bool Returns true if all queries succeed, false otherwise.
+         */
+        if (!function_exists('executeWithSavepoints')) {
+            function executeWithSavepoints($conn, $queries) {
+                try {
+                    // Begin transaction
+                    mysqli_begin_transaction($conn);
+
+                    // Iterate over queries and add savepoints
+                    foreach ($queries as $i => $query) {
+                        $savepoint = "SAVEPOINT_$i";
+                        mysqli_query($conn, "SAVEPOINT $savepoint");
+
+                        $result = mysqli_query($conn, $query);
+                        if (!$result) {
+                            throw new Exception("Query failed: " . mysqli_error($conn));
+                        }
+                    }
+
+                    // Commit all if successful
+                    mysqli_commit($conn);
+                    return true;
+                } catch (Exception $e) {
+                    // Roll back to the last successful savepoint if error occurs
+                    mysqli_rollback($conn);
+                    error_log("Transaction error with savepoints: " . $e->getMessage());
+                    return false;
+                }
+            }
+        }
+
+        // ODBC adaptability (optional: Uncomment if future ODBC support is needed)
+        // $odbc_conn = odbc_connect("Driver={MySQL ODBC 8.0 Driver};Server=$servername;Database=$database;", $username, $password);
+
+        // Close connection at end of script (handled in a specific exit script if needed)
+        register_shutdown_function(function() use ($conn) {
+            if (is_resource($conn)) { // Check if the connection is still valid
+                mysqli_close($conn);
+            }
+        });
+    }
+
+
+
+login.php
+
+  include("init.php");
+    session_start();
+
+    if (isset($_POST["userid"], $_POST["password"])) {
+        $username = $_POST["userid"];
+        $password = $_POST["password"];
+
+        // Step 1: Preventing SQL Injection with prepared statements
+        // Fetch user details including failed attempts and lockout status
+        $stmt = $conn->prepare("SELECT userid, password, failed_attempts, lock_until FROM admin_login WHERE userid = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows == 1) {
+            $row = $result->fetch_assoc();
+
+            // Debugging: Check user details
+            // echo "Lock until: " . $row['lock_until'] . "<br>";
+            // echo "Failed attempts: " . $row['failed_attempts'] . "<br>";
+
+            // Step 2: Check if account is locked
+            if (!empty($row['lock_until']) && strtotime($row['lock_until']) > time()) {
+                $lock_time_remaining = strtotime($row['lock_until']) - time();
+                echo '<script language="javascript">';
+                echo 'alert("Account locked. Try again after ' . gmdate("H:i:s", $lock_time_remaining) . '")';
+                echo '</script>';
+                exit();
+            }
+
+            // Step 3: Verify password
+            if (password_verify($password, $row['password'])) {
+                // Successful login, reset failed attempts and lock_until if login is successful
+                $stmt = $conn->prepare("UPDATE admin_login SET failed_attempts = 0, lock_until = NULL WHERE userid = ?");
+                $stmt->bind_param("s", $username);
+                $stmt->execute();
+
+                // Regenerate session ID to prevent session fixation
+                session_regenerate_id(true);
+
+                // Set session for login_user
+                $_SESSION['login_user'] = $username;
+                header("Location: dashboard.php");
+                exit();
+            } else {
+                // Incorrect password, increment failed attempts
+                $failed_attempts = $row['failed_attempts'] + 1;
+                $lock_duration = 15 * 60; // Lockout for 15 minutes
+                $lock_until = null;
+
+                // Lock account after 3 failed attempts
+                if ($failed_attempts >= 3) {
+                    $lock_until = date('Y-m-d H:i:s', time() + $lock_duration);
+                    echo '<script language="javascript">';
+                    echo 'alert("Your account has been locked. Please try again after 15 minutes.")';
+                    echo '</script>';
+                }
+
+                // Step 5: Update failed attempts and lock_until in the database
+                $stmt = $conn->prepare("UPDATE admin_login SET failed_attempts = ?, lock_until = ? WHERE userid = ?");
+                $stmt->bind_param("iss", $failed_attempts, $lock_until, $username);
+                $stmt->execute();
+
+                // Debugging - Check if the update was successful
+                if ($stmt->affected_rows > 0) {
+                    // echo "Failed attempts updated to " . $failed_attempts . "<br>";
+                    // if ($lock_until) {
+                    //     echo "Account locked until: " . $lock_until . "<br>";
+                    // }
+                } else {
+                    echo "Failed attempts not updated. Please try again.";
+                }
+
+                echo '<script language="javascript">';
+                echo 'alert("Invalid Username or Password. You have ' . (3 - $failed_attempts) . ' attempts left.")';
+                echo '</script>';
+            }
+        } else {
+            echo '<script language="javascript">';
+            echo 'alert("Invalid Username or Password")';
+            echo '</script>';
+        }
+    }
+
+
+
+logout.php
+
+   session_start();
+   
+   if(session_destroy()) {
+        header("Location: login.php");
+        echo '<script language="javascript">';
+        echo 'alert("Logout successful")';
+        echo '</script>';
+
+   }
+
+
+
+
+manage_classes.php
+
+ include('init.php');
+    include('session.php');
+
+    // Check if a search query is provided
+    $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
+
+    // Search with FULLTEXT and LIKE fallback
+    $sql = "SELECT name, id FROM class";
+    if (!empty($search)) {
+        $sql .= " WHERE MATCH(name) AGAINST ('$search' IN NATURAL LANGUAGE MODE) 
+                  OR name LIKE '%$search%'";
+    }
+
+    $result = mysqli_query($conn, $sql);
+
+    if (mysqli_num_rows($result) > 0) {
+        echo "<table>
+            <caption>Manage Classes</caption>
+            <tr><th>ID</th><th>NAME</th><th>Actions</th></tr>";
+
+        while ($row = mysqli_fetch_array($result)) {
+            $class_name = urlencode($row['name']);
+            echo "<tr>
+                    <td>{$row['id']}</td>
+                    <td>{$row['name']}</td>
+                    <td><a href='manage_students.php?class_name=$class_name'>View Students</a></td>
+                  </tr>";
+        }
+        echo "</table>";
+    } else {
+        echo "No matching classes found.";
+    }
+
+
+
+
+
+manage_results.php
+
+ include('init.php');
+    include('session.php');
+
+    if (isset($_POST['class_name'], $_POST['rno'])) {
+        $class_name = $_POST['class_name'];
+        $rno = $_POST['rno'];
+
+        // Start transaction
+        mysqli_begin_transaction($conn);
+
+        try {
+            // Try to delete the result for the given class and roll number
+            $delete_sql = "DELETE FROM result WHERE rno='$rno' AND class='$class_name'";
+            if (!mysqli_query($conn, $delete_sql)) {
+                throw new Exception('Error deleting result');
+            }
+
+            // Commit transaction
+            mysqli_commit($conn);
+            echo '<script language="javascript">';
+            echo 'alert("Deleted successfully")';
+            echo '</script>';
+        } catch (Exception $e) {
+            // Rollback transaction in case of error
+            mysqli_roll_back($conn);
+            echo '<script language="javascript">';
+            echo 'alert("Error: ' . $e->getMessage() . '")';
+            echo '</script>';
+        }
+    }
+
+    if (isset($_POST['rn'], $_POST['p1'], $_POST['p2'], $_POST['p3'], $_POST['p4'], $_POST['p5'], $_POST['class'])) {
+        $rno = $_POST['rn'];
+        $class_name = $_POST['class'];
+        $p1 = (int)$_POST['p1'];
+        $p2 = (int)$_POST['p2'];
+        $p3 = (int)$_POST['p3'];
+        $p4 = (int)$_POST['p4'];
+        $p5 = (int)$_POST['p5'];
+
+        // Calculate total marks and percentage
+        $marks = $p1 + $p2 + $p3 + $p4 + $p5;
+        $percentage = $marks / 5;
+
+        // Start transaction
+        mysqli_begin_transaction($conn);
+
+        try {
+            // Prepare the SQL query for updating the result
+            $update_sql = "UPDATE result SET p1='$p1', p2='$p2', p3='$p3', p4='$p4', p5='$p5', marks='$marks', percentage='$percentage' WHERE rno='$rno' AND class='$class_name'";
+
+            // Execute the update query
+            if (!mysqli_query($conn, $update_sql)) {
+                throw new Exception('Error updating result');
+            }
+
+            // Commit transaction if update is successful
+            mysqli_commit($conn);
+            echo '<script language="javascript">';
+            echo 'alert("Updated successfully")';
+            echo '</script>';
+        } catch (Exception $e) {
+            // Rollback transaction in case of error
+            mysqli_roll_back($conn);
+            echo '<script language="javascript">';
+            echo 'alert("Error: ' . $e->getMessage() . '")';
+            echo '</script>';
+        }
+    }
+
+
+
+
+manage_students.php
+
+ include('init.php');
+    include('session.php');
+
+    // Check if a delete request was made
+    if (isset($_GET['delete_rno'])) {
+        $delete_rno = mysqli_real_escape_string($conn, $_GET['delete_rno']);
+        $delete_sql = "DELETE FROM students WHERE rno = '$delete_rno'";
+        if (mysqli_query($conn, $delete_sql)) {
+            echo "Student deleted successfully.";
+        } else {
+            echo "Error deleting student: " . mysqli_error($conn);
+        }
+    }
+
+    // Check if a search query or class_name is provided
+    $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
+    $class_name = isset($_GET['class_name']) ? mysqli_real_escape_string($conn, $_GET['class_name']) : '';
+
+    // Base SQL query to fetch students grouped by class
+    $sql = "SELECT name, rno, class_name FROM students";
+    if (!empty($class_name)) {
+        $sql .= " WHERE class_name = '$class_name'";
+    } elseif (!empty($search)) {
+        $sql .= " WHERE MATCH(name, class_name) AGAINST ('$search' IN NATURAL LANGUAGE MODE) 
+                  OR name LIKE '%$search%' OR class_name LIKE '%$search%'";
+    }
+    $sql .= " ORDER BY class_name";
+
+    $result = mysqli_query($conn, $sql);
+
+    if (mysqli_num_rows($result) > 0) {
+        $current_class = '';
+        echo "<div style='margin-bottom: 20px;'>
+                <form method='GET' action='manage_students.php'>
+                    <input type='text' name='search' placeholder='Search for student name or class name'>
+                    <input type='submit' value='Search'>
+                </form>
+              </div>";
+
+        while ($row = mysqli_fetch_array($result)) {
+            // Start a new table for each class
+            if ($current_class != $row['class_name']) {
+                if ($current_class != '') {
+                    echo "</table>";  // Close the previous class table
+                }
+                $current_class = $row['class_name'];
+                echo "<h3>Class: $current_class</h3>
+                      <table border='1'>
+                          <tr><th>NAME</th><th>ROLL NO</th><th>CLASS</th><th>Actions</th></tr>";
+            }
+            
+            // Mask the roll number for privacy
+            $masked_rno = substr($row['rno'], 0, -2) . '**';
+            echo "<tr>
+                    <td>{$row['name']}</td>
+                    <td>{$masked_rno}</td>
+                    <td>{$row['class_name']}</td>
+                    <td><a href='manage_students.php?delete_rno={$row['rno']}' onclick=\"return confirm('Are you sure you want to delete this student?');\">Delete</a></td>
+                  </tr>";
+        }
+        echo "</table>"; // Close the last class table
+    } else {
+        echo "No matching students found.";
+    }
+
+
+
+
+
+report.php
+
+ // Fetch students whose results are missing
+        $missing_results_sql = "SELECT students.rno, students.name, students.class_name 
+                                FROM students 
+                                WHERE students.rno NOT IN (SELECT result.rno FROM result)";
+        $missing_results_result = mysqli_query($conn, $missing_results_sql);
+
+        if (mysqli_num_rows($missing_results_result) > 0) {
+            echo "<table>
+                    <tr><th>Roll No</th><th>Name</th><th>Class</th></tr>";
+            while ($row = mysqli_fetch_assoc($missing_results_result)) {
+                echo "<tr>
+                        <td>{$row['rno']}</td>
+                        <td>{$row['name']}</td>
+                        <td>{$row['class_name']}</td>
+                    </tr>";
+            }
+            echo "</table>";
+        } else {
+            echo "<p>No missing results found.</p>";
+        }
+
+        // Close database connection
+        mysqli_close($conn);
+
+
+
+
+
+session.php
+
+    // Ensure session_start is only called if no session is active
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    // Key Distribution Center (KDC) - Generate a secure session key if not already set
+    if (!isset($_SESSION['session_key'])) {
+        $_SESSION['session_key'] = bin2hex(random_bytes(32));  // Generate a secure random session key (256-bit)
+    }
+
+    // Simulate storing session data in a distributed cache system (e.g., Redis or Memcached)
+    // If you are in a distributed environment, you should connect to Redis/Memcached to store the session key securely
+
+    // For example, using Redis for centralized session storage (replace with your Redis connection details)
+    /*
+    $redis = new Redis();
+    $redis->connect('localhost', 6379);
+    $redis->set('session_key_' . session_id(), $_SESSION['session_key']);
+    */
+
+    // Using MySQL database to check the logged-in user (traditional session management)
+    include('init.php'); // Make sure to include init.php to have database connection
+
+    $db = mysqli_select_db($conn, 'srms');
+    $user_check = $_SESSION['login_user'];  // Get the user ID stored in session
+
+    // Query to fetch the user from the database based on session information
+    $ses_sql = mysqli_query($conn, "SELECT userid FROM admin_login WHERE userid= '$user_check'");
+    $row = mysqli_fetch_array($ses_sql);
+
+    $login_session = $row['userid'];  // Assign the user ID to the session
+
+    // Validate the session key for added security
+    if (!isset($_SESSION['session_key']) || empty($_SESSION['session_key'])) {
+        echo '<script>alert("Session key is missing or invalid! Please log in again.")</script>';
+        session_destroy();  // Destroy the session if the key is invalid
+        header("Location: login.php");  // Redirect to login page
+        exit();
+    }
+
+    // Check if the user is logged in, if not, redirect to login page
+    if (!isset($_SESSION['login_user'])) {
+        header("Location: login.php");
+        exit();
+    }
+
+    // Clustered Session Management (Simulated) - Store session data in Redis/Memcached if needed for distributed setups
+    /*
+    // Example Redis session storage (if using Redis):
+    $redis = new Redis();
+    $redis->connect('localhost', 6379);
+    $redis->set('session_key_' . session_id(), $_SESSION['session_key']);
+    */
+
+    // If your system is using Memcached, you can similarly store session data in Memcached:
+    /*
+    $memcache = new Memcache;
+    $memcache->connect('localhost', 11211);
+    $memcache->set('session_key_' . session_id(), $_SESSION['session_key']);
+    */
+
+    // Additional improvements can include automatic session token expiration, logging, etc.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

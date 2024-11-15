@@ -1,0 +1,27 @@
+.main {
+    display: grid;
+    justify-content: center;
+    padding: 30px;
+}
+
+.main table {
+    margin: 50px auto;
+    width: 50%;
+    border-collapse: collapse;
+    text-align: left;
+    table-layout: fixed;
+}
+
+.main th {
+    color: #a3e635; /* Lime Green */
+}
+
+.main tr:hover {
+    background-color: #1e293b; /* Dark Navy */
+}
+
+th, td {
+    padding: 8px 30px;
+    border-bottom: 1px solid #38bdf8; /* Sky Blue */
+    color: #e2e8f0; /* Light Gray */
+}
