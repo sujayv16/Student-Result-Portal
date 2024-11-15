@@ -155,7 +155,7 @@ The system employs a robust relational database model with the following key ope
 5. **Admin Login**:
    - Use the following default credentials to log in as admin:
      - **Username**: admin
-     - **Password**: 123
+     - **Password**: admin123
 
 ---
 
