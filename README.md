@@ -29,7 +29,7 @@ Check out a live demo of this project here:
 ## Team Members
 - **Viswanadhapalli Sujay** - B22CS063
 - **Sonajoke Nikshiptha** - B22CS050
-- **Kandrathi Sai Aishwarya** - B22CS028
+- **Kandrathi Sai Aiswarya** - B22CS028
 
 ## Acknowledgments
 We extend our gratitude to **Dr. Suchetana Chakraborty** for guidance and support throughout this project.
