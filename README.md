@@ -3,7 +3,11 @@
 The **Student Result Portal** is a secure, web-based application built using **PHP** and **MySQL**, designed to manage student registration, academic results, and reporting functionalities. The portal enables students to view their results and download them, while administrators and teachers can efficiently manage student records, results, and classes. This application implements several advanced database and security features to ensure smooth operation, accurate data handling, and secure access control.
 
 ---
+## Demo
 
+Check out a live demo of this project here:
+
+[Demo Link](https://drive.google.com/file/d/17ppnOVlpifkI9gu8Vg2T-d-Dhx_anhPd/view?usp=sharing) 
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -21,7 +25,7 @@ The **Student Result Portal** is a secure, web-based application built using **P
 6. [Database Functionalities](#database-functionalities)
 7. [Installation Instructions](#installation-instructions)
 8. [Contributing](#contributing)
-=======
+
 ## Team Members
 - **Viswanadhapalli Sujay** - B22CS063
 - **Sonajoke Nikshiptha** - B22CS050
