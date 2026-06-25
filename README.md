@@ -5,9 +5,9 @@ The **Student Result Portal** is a secure, web-based application built using **P
 ---
 ## Demo
 
-Check out a live demo of this project here:
+Check out a demo of this project here:
 
-[Demo Link](https://drive.google.com/file/d/17ppnOVlpifkI9gu8Vg2T-d-Dhx_anhPd/view?usp=sharing) 
+[Demo Link](https://youtu.be/ihcWceRvfi0) 
 
 ## Table of Contents
 1. [Introduction](#introduction)
